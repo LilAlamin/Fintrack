@@ -7,6 +7,7 @@ class FeatureDiscovery extends StatefulWidget {
   final String title;
   final String description;
   final VoidCallback onNext;
+  final VoidCallback? onDismiss;
   final bool isLast;
 
   const FeatureDiscovery({
@@ -15,6 +16,7 @@ class FeatureDiscovery extends StatefulWidget {
     required this.title,
     required this.description,
     required this.onNext,
+    this.onDismiss,
     this.isLast = false,
   });
 
@@ -140,8 +142,22 @@ class _FeatureDiscoveryState extends State<FeatureDiscovery> with SingleTickerPr
                   ),
                   const SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      if (widget.onDismiss != null)
+                        TextButton(
+                          onPressed: widget.onDismiss,
+                          child: Text(
+                            'Jangan tampilkan lagi',
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withValues(alpha: 0.6),
+                              fontSize: 12,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox.shrink(),
                       GestureDetector(
                         onTap: widget.onNext,
                         child: Container(

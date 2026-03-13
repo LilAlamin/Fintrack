@@ -36,26 +36,27 @@ class _MainScreenState extends State<MainScreen> {
       const ProfileScreen(),
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _resetTutorialForTesting(); // Reset to show the new expanded flow
+      // _resetTutorialForTesting(); // Uncomment only if you want to force-reset for debugging
       _checkTutorial();
     });
-  }
-
-  Future<void> _resetTutorialForTesting() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Resetting this so the user can see the new Wallet tutorial expansion
-    await prefs.setBool('interactive_tutorial_completed', false);
   }
 
   Future<void> _checkTutorial() async {
     final prefs = await SharedPreferences.getInstance();
     final bool isFirstRun = prefs.getBool('is_first_run') ?? true;
     final bool tutorialCompleted = prefs.getBool('interactive_tutorial_completed') ?? false;
+    final bool tutorialDisabled = prefs.getBool('interactive_tutorial_disabled_forever') ?? false;
 
-    // Only show if onboarding is done but interactive tutorial is not
-    if (!isFirstRun && !tutorialCompleted) {
+    // Only show if onboarding is done but interactive tutorial is not and not disabled
+    if (!isFirstRun && !tutorialCompleted && !tutorialDisabled) {
       _startTutorialSequence();
     }
+  }
+
+  Future<void> _dismissTutorialForever() async {
+    _overlayEntry?.remove();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('interactive_tutorial_disabled_forever', true);
   }
 
   void _startTutorialSequence() {
@@ -63,12 +64,14 @@ class _MainScreenState extends State<MainScreen> {
       key: _fabKey,
       title: 'Catat Transaksi',
       description: 'Ketuk di sini untuk mulai mencatat pengeluaran atau pemasukan pertama Anda!',
+      onDismiss: _dismissTutorialForever,
       onNext: () {
         _overlayEntry?.remove();
         _showSpotlight(
           key: _walletKey,
           title: 'Dompet Digital',
           description: 'Kelola berbagai dompet dan saldo Anda di sini agar tetap terpantau.',
+          onDismiss: _dismissTutorialForever,
           onNext: () {
             _overlayEntry?.remove();
             // Switch to Wallet Page
@@ -83,12 +86,14 @@ class _MainScreenState extends State<MainScreen> {
                     '• Kebutuhan (Makan, Listrik) \n'
                     '• Keinginan (Hobi, Jajan) \n'
                     '• Tabungan / Dana Darurat',
+                onDismiss: _dismissTutorialForever,
                 onNext: () {
                   _overlayEntry?.remove();
                   _showSpotlight(
                     key: _statsKey,
                     title: 'Statistik Keuangan',
                     description: 'Lihat progres keuangan Anda dalam grafik yang cantik dan mudah dipahami.',
+                    onDismiss: _dismissTutorialForever,
                     onNext: () async {
                       _overlayEntry?.remove();
                       final prefs = await SharedPreferences.getInstance();
@@ -110,6 +115,7 @@ class _MainScreenState extends State<MainScreen> {
     required String title,
     required String description,
     required VoidCallback onNext,
+    VoidCallback? onDismiss,
     bool isLast = false,
   }) {
     _overlayEntry = OverlayEntry(
@@ -118,6 +124,7 @@ class _MainScreenState extends State<MainScreen> {
         title: title,
         description: description,
         onNext: onNext,
+        onDismiss: onDismiss,
         isLast: isLast,
       ),
     );
